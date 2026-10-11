@@ -75,9 +75,7 @@ horizontalSight-custom-nodes/
 │   └── booru_tags.py      BooruTagNormalize（词表在 ../danbooru/）
 ├── danbooru/              Danbooru 标签表 CSV（BooruTagNormalize 的数据源）
 ├── llama_cpp/             12 个 llama.cpp 节点（上游 fork）
-├── example_workflows/     示例工作流 JSON（随仓库分发，可直接拖进 ComfyUI）
-├── local_config_ignore/   面向本人的成品：工作流 JSON、标签规范、结论与复盘（本机目录，不入库）
-└── agent_workspace_ignore/ 过程与工程文件：构建脚本、会话记录、排查日志、备份（本机目录，不入库）
+└── example_workflows/     示例工作流 JSON，可直接拖进 ComfyUI
 ```
 
 ## 三个刻意的设计决定
@@ -100,23 +98,8 @@ horizontalSight-custom-nodes/
 然后在门面 `__init__.py` 的加载列表 `("image_folder", "sequence_save", "memory", "booru_tags")` 里加一项。
 改完重启 ComfyUI。
 
-## example_workflows/、local_config_ignore/ 与 agent_workspace_ignore/
+## example_workflows/
 
-`example_workflows/` 是**随仓库分发**的示例工作流，按用途/模型分类：`A1111（SD webui）/`、
+`example_workflows/` 是随仓库分发的示例工作流，按用途/模型分类：`A1111（SD webui）/`、
 `Krea2/`、`llama/`、`MiniMaxH3/`、`qwen2.1/`、`Zimage/`，共 11 个 JSON，可直接拖进 ComfyUI
 画布使用。它们不是 ComfyUI 运行时的一部分，ComfyUI 不会加载它们。
-
-`local_config_ignore/` 是**面向本人**的阅读入口：可直接拖进 ComfyUI 的工作流 JSON、Danbooru
-标签写作规范、TIPO 调研结论与落地方案，以及图像元数据事故复盘。ComfyUI 不会加载这里的
-任何东西（只有包根的 `__init__.py` 会被导入）。
-
-`agent_workspace_ignore/` 放**过程与工程**文件：「Booru 标签 → 自然语言」流水线的构建/合并脚本
-（`_wf_pipeline/builders/build_workflow_v1/v2/v3.py`、`build_qwen_wf.py`、`merge_abc.py`）、
-它们生成的工作流 JSON、内嵌的 `ComfyUI-PromptMetaExtract` 节点包源码（从图片元数据反推标签）、
-`hs_merge/`（当初合并伞包的迁移工具），以及会话记录、排查日志与备份。
-
-这些脚本会读写 `ComfyUI\user\default\workflows\llama\` 下**实际在用**的工作流，
-路径都按脚本自身位置解析。它们不是 ComfyUI 运行时的一部分，ComfyUI 不会加载它们。
-
-后两个目录是**本机目录**，已在 `.gitignore` 中排除，不随仓库分发；分工约定写在
-`local_config_ignore/README.md`。
