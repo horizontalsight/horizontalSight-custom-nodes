@@ -1,0 +1,36 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# ---------- 本机目录（不进仓库；目录名以 _ignore 结尾即表示「纯本机内容」）----------
+# agent_workspace_ignore/   约 79 MB / 3150 文件：venv、node_modules、备份、会话记录
+# local_config_ignore/      面向本人的工作流 JSON、标签规范、笔记与复盘
+/agent_workspace_ignore/
+/local_config_ignore/
+
+# ---------- 模型权重（防呆，本机当前无此类文件）----------
+checkpoints/
+*.gguf
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# ---------- 编辑器 / 系统垃圾 ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 日志与临时产物 ----------
+*.log
+*.tmp
+*.bak
+*~
+*.orig
+*.rej
