@@ -1,0 +1,22 @@
+NOTICE — llama_cpp/
+===================
+
+This directory is a fork / snapshot of the following upstream project:
+
+    https://github.com/lihaoyun6/ComfyUI-llama-cpp_vlm
+    commit c3a6314 (2026-06-13)
+
+which is itself based on:
+
+    https://github.com/kijai/ComfyUI-llama-cpp
+
+The upstream repositories do not ship a LICENSE file. Copyright belongs to the
+original authors and their contributors.
+
+No license is granted for this directory. It is included for personal use only
+and is NOT covered by the repository's root MIT license. Redistribution,
+sublicensing, or commercial use may require permission from the copyright
+holders.
+
+If you are a rights holder and object to this inclusion, please open an issue
+and the directory will be removed.

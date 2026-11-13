@@ -11,6 +11,7 @@ venv/
 # local_config_ignore/      面向本人的工作流 JSON、标签规范、笔记与复盘
 /agent_workspace_ignore/
 /local_config_ignore/
+/_local_config_ignore/
 
 # ---------- 模型权重（防呆，本机当前无此类文件）----------
 checkpoints/

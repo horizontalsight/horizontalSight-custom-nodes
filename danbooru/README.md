@@ -4,19 +4,20 @@
 
 | 文件 | 大小 | 行数 | 别名 | 数据日期 | 阈值 |
 |---|---|---|---|---|---|
-| `danbooru_2026-04-01_pt20-ia-dd.csv` | 5,079,171 B | 201,269 | 41,090 | 2026-04-01 | 发帖数 ≥ 20 |
-| `danbooru_2024-10-14_legacy-top100k.csv` | 2,510,944 B | 100,000 | 19,648 | 2024-10 | top-100k 截断 |
+| `danbooru_csv.zip` | 3,130,384 B | — | — | — | 两个 CSV 的压缩包 |
+| └ `danbooru_2026-04-01_pt20-ia-dd.csv` | 5,079,171 B | 201,269 | 41,090 | 2026-04-01 | 发帖数 ≥ 20 |
+| └ `danbooru_2024-10-14_legacy-top100k.csv` | 2,510,944 B | 100,000 | 19,648 | 2024-10 | top-100k 截断 |
 
 **为什么要放两份**：新版删掉了一批旧标签（旧表 2.1%、共 2,139 个），其中不少是模型和
 2024 年前后训练的底模都熟知的常用标签——`bangs`(145 万帖)、`silver_hair`(17 万)、
 `black_legwear`、`white_legwear`、`uniform`、`looking_away`、`shiny_hair`、`striped`、
-`plaid` 等。只用新表会把它们判成"生造标签"。节点默认把本目录下**所有** `danbooru*.csv`
-按文件名倒序合并加载（新的优先），新旧两代标签都能用；`csv_path` 填了路径则只加载指定的
-（多个用 `;` 分隔）。
+`plaid` 等。只用新表会把它们判成"生造标签"。节点默认读取本目录下所有
+`danbooru*.zip`，zip 内的 CSV 按文件名倒序合并（新的优先），新旧两代标签都能用；
+目录里只有 CSV（旧版布局）也仍然兼容。`csv_path` 填了路径则只加载指定的
+（多个用 `;` 分隔，支持 `.csv` 和 `.zip`）。
 
-`danbooru_2024-10-14_legacy-top100k.csv` 的来源是本机 A1111 的
-`extensions\a1111-sd-webui-tagcomplete\tags\danbooru.csv`，也就是 tagcomplete 在
-2024-11 改截断方式（top-100k → 发帖数 ≥ 30）之前的那一版。
+旧表来自 A1111 tagcomplete 在 2024-11 改截断方式（top-100k → 发帖数 ≥ 30）之前的那一版
+`danbooru.csv`。
 
 ## 来源
 
@@ -26,7 +27,7 @@ https://raw.githubusercontent.com/DraconicDragon/dbr-e621-lists-archive/main/tag
 
 - 归档仓库：https://github.com/DraconicDragon/dbr-e621-lists-archive
 - 生成脚本：https://github.com/DraconicDragon/danbooru-e621-tag-list-processor
-- 本机旧表（`novelai-webui-aki-v3\extensions\a1111-sd-webui-tagcomplete\tags\danbooru.csv`）与
+- 本机旧表（A1111 tagcomplete 缓存的 `danbooru.csv`）与
   NeuralBooru 内置的那份，都是同一归档里的 `danbooru_2024-12-22_pt25-ia-dd.csv`（git blob sha 相同），
   而那份又更旧于本文件。
 
@@ -83,8 +84,8 @@ sha1("blob " + len + "\0" + 内容) = 45992801b5c5dd5290b31b101a32438fd70041ad
 
 更新方式二选一：
 
-1. 重新下载上面的 raw 链接（把日期换成新的文件名）。本机已有下载脚本：
-   `agent_workspace_ignore\_wf_wire\dl_danbooru.py`（Python 标准库，含 blob sha 校验；注意本机
+1. 重新下载上面的 raw 链接（把日期换成新的文件名），把 CSV 以原文件名放进
+   `danbooru_csv.zip`。本机下载脚本用 Python 标准库实现（含 blob sha 校验；注意本机
    `curl.exe` / PowerShell 的 TLS 在此沙箱下不可用，必须用 Python 下载）。
 2. 直接从 Danbooru API 现抓一份（`/tags.json` 按发帖数排序 + `/tag_aliases.json`），
    可拿到当天最新数据，代价是要跑几分钟、需要控制请求频率。
@@ -93,4 +94,4 @@ sha1("blob " + len + "\0" + 内容) = 45992801b5c5dd5290b31b101a32438fd70041ad
 
 给"自然语言 → Danbooru 标签"工作流做**标签归一/校验**：把模型输出的写法
 （`pouting`、`high angle shot`、`teal hair`）映射到词表里真实存在的标签，
-或判定为生造标签丢弃。见 `agent_workspace_ignore\_wf_wire\评估-反向工作流首次生成.md`。
+或判定为生造标签丢弃。见本地工作流评估笔记。

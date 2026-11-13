@@ -1,0 +1,5 @@
+_local_config_ignore/
+local_config_ignore/
+__pycache__/
+*.py[cod]
+.test_work/

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Civitai 数据库</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Civitai 数据库</h1>
+    <div class="dbpath" id="db-path">加载中…</div>
+    <button id="btn-refresh" title="重新读取数据库">刷新</button>
+    <button id="btn-health" title="检查缺失路径 / 重名 / 未找到">体检</button>
+  </header>
+
+  <div class="stats">
+    <span class="chip">总计 <b id="stat-total">0</b></span>
+    <span class="chip ok">已收录 <b id="stat-ok">0</b></span>
+    <span class="chip">待查询 <b id="stat-new">0</b></span>
+    <span class="chip warn">未找到 <b id="stat-notfound">0</b></span>
+    <span class="chip err">失败 <b id="stat-error">0</b></span>
+    <span class="chip pending">待哈希 <b id="stat-pending">0</b></span>
+    <span class="chip">已忽略 <b id="stat-ignored">0</b></span>
+  </div>
+
+  <nav class="tabs">
+    <button class="active" data-tab="models">模型库</button>
+    <button data-tab="inject">PNG 注入</button>
+    <button data-tab="settings">设置</button>
+  </nav>
+
+  <main>
+    <section id="tab-models">
+      <div class="toolbar">
+        <input id="f-q" class="grow" type="text" placeholder="搜索模型名 / 文件名 / AutoV2 / AIR">
+        <select id="f-type"><option value="">全部类型</option></select>
+        <select id="f-base"><option value="">全部 baseModel</option></select>
+        <select id="f-status">
+          <option value="">全部状态</option>
+          <option value="ok">已收录</option>
+          <option value="new">待查询</option>
+          <option value="not_found">未找到</option>
+          <option value="error">查询失败</option>
+          <option value="no_air">无 AIR</option>
+          <option value="pending">待哈希</option>
+          <option value="ignored">已忽略</option>
+          <option value="missing_path">路径缺失</option>
+        </select>
+        <span class="hint">模型目录:</span>
+        <input id="f-path" type="text" placeholder="只显示该目录下的路径；留空显示全部" style="width:320px" title="按本地路径前缀筛选，默认是 ComfyUI 的 models 目录">
+        <button id="btn-path-browse" type="button">浏览</button>
+        <button id="btn-path-clear" type="button">全部</button>
+        <label><input id="f-existing" type="checkbox"> 仅路径存在</label>
+        <span class="sep"></span>
+        <button id="btn-scan" class="primary">扫描登记</button>
+        <button id="btn-verify">校验路径</button>
+        <button id="btn-hash-inc">增量哈希</button>
+        <button id="btn-hash-full">全量哈希</button>
+        <span class="sep"></span>
+        <button id="btn-query-new" class="primary">联网查询（新增）</button>
+        <button id="btn-query-nf">重查未找到</button>
+        <button id="btn-query-fail">重试失败</button>
+        <label>上限 <input id="query-limit" type="number" min="0" value="0" style="width:66px" title="0 = 不限"></label>
+        <span class="sep"></span>
+        <button id="btn-bulk-query">重查选中</button>
+        <button id="btn-bulk-delete" class="danger">删除选中</button>
+        <span class="hint" id="sel-count"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:28px"><input type="checkbox" id="check-all" title="全选当前页"></th>
+              <th data-sort="status">状态</th>
+              <th data-sort="file">文件名</th>
+              <th data-sort="AutoV2">AutoV2</th>
+              <th data-sort="modelName">模型名</th>
+              <th data-sort="AIR">AIR</th>
+              <th data-sort="type">类型</th>
+              <th data-sort="baseModel">baseModel</th>
+              <th>路径</th>
+              <th style="width:110px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="pager-info"></span>
+        <button id="page-prev">上一页</button>
+        <span id="page-now">1</span>
+        <button id="page-next">下一页</button>
+        <select id="page-size">
+          <option value="50">50/页</option>
+          <option value="100">100/页</option>
+          <option value="200">200/页</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="tab-inject" hidden>
+      <div class="section-title">
+        <h2>PNG 注入</h2>
+        <span class="hint">从每张图内嵌工作流提取模型 → 查本地库 → 写入 workflow.extra.airs；同时修复 Civitai 提示词。</span>
+      </div>
+      <div class="card">
+        <div class="grid2">
+          <label class="field"><span>输入目录</span>
+            <div style="display:flex;gap:6px">
+              <input id="inj-input" type="text" placeholder="包含 PNG 的文件夹，会递归扫描">
+              <button data-browse="inj-input">浏览</button>
+            </div>
+          </label>
+          <label class="field"><span>输出目录（留空 = 输入目录/add_data）</span>
+            <div style="display:flex;gap:6px">
+              <input id="inj-output" type="text" placeholder="留空自动生成">
+              <button data-browse="inj-output">浏览</button>
+            </div>
+          </label>
+          <label class="field"><span>文件名后缀</span>
+            <input id="inj-suffix" type="text" value="_comfy">
+          </label>
+          <label class="field"><span>收录角色 kinds</span>
+            <input id="inj-kinds" type="text" value="model,lora" placeholder="model,lora / all / model,lora,vae">
+          </label>
+        </div>
+        <div class="checkrow" style="margin-top:10px">
+          <span class="hint">「预览」只报告，不写文件；「执行注入」会写入输出目录，原图不会被修改。已有输出默认跳过，勾选「覆盖已有输出」才会重做。</span>
+        </div>
+        <div class="checkrow" style="margin-top:8px">
+          <label><input id="inj-overwrite" type="checkbox"> 覆盖已有输出</label>
+          <label><input id="inj-disabled" type="checkbox"> 包含被禁用的 LoRA</label>
+          <label><input id="inj-api" type="checkbox"> 本地库没有时联网兜底</label>
+          <label><input id="inj-fix-prompt" type="checkbox" checked> 修复提示词</label>
+          <label><input id="inj-fix-values" type="checkbox" checked> 内联数值</label>
+        </div>
+        <div class="actions">
+          <button id="inj-preview" class="primary">预览（不写文件）</button>
+          <button id="inj-run">执行注入（写文件）</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>结果</h2><span class="hint" id="inj-summary"></span></div>
+        <div class="table-wrap" style="max-height:420px">
+          <table>
+            <thead><tr><th>文件</th><th>状态</th><th>AIR 数</th><th>提示词</th><th>体积变化</th><th>说明</th></tr></thead>
+            <tbody id="inj-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-settings" hidden>
+      <div class="section-title">
+        <h2>设置</h2>
+        <span class="hint">保存后立即生效；数据库路径变更会重新加载。</span>
+      </div>
+      <div class="card">
+        <div class="grid2">
+          <label class="field"><span>数据库路径</span><input id="cfg-db" type="text"></label>
+          <label class="field"><span>Civitai API</span><input id="cfg-api" type="text"></label>
+          <label class="field"><span>本地 ComfyUI 根目录（留空 = 按插件安装位置推断）</span>
+            <div style="display:flex;gap:6px">
+              <input id="cfg-comfyui-root" type="text" placeholder="留空自动按插件位置推断">
+              <button id="btn-detect-comfyui" type="button">从安装位置推断</button>
+            </div>
+          </label>
+          <label class="field"><span>模型目录（由根目录计算，只读）</span><input id="cfg-models-root" type="text" readonly></label>
+          <label class="field"><span>请求超时（秒）</span><input id="cfg-timeout" type="number" min="5" max="120"></label>
+          <label class="field"><span>重试次数</span><input id="cfg-retries" type="number" min="0" max="10"></label>
+          <label class="field"><span>查询间隔（秒）</span><input id="cfg-delay" type="number" min="0" step="0.1"></label>
+          <label class="field"><span>连续 429 暂停阈值</span><input id="cfg-429" type="number" min="1" max="20"></label>
+          <label class="field"><span>哈希缓存文件</span><input id="cfg-hash-cache" type="text"></label>
+          <label class="field"><span>首次导入旧缓存（可留空）</span><input id="cfg-seed-cache" type="text"></label>
+          <label class="field"><span>备份保留份数</span><input id="cfg-backup-keep" type="number" min="0" max="100"></label>
+          <label class="field"><span>注入默认输出子目录</span><input id="cfg-output-subdir" type="text"></label>
+          <label class="field"><span>注入默认后缀</span><input id="cfg-suffix" type="text"></label>
+          <label class="field"><span>注入默认 kinds</span><input id="cfg-kinds" type="text"></label>
+        </div>
+        <div class="checkrow" style="margin-top:10px">
+          <label><input id="cfg-allow-remote" type="checkbox"> 允许远程访问（不建议）</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field"><span>扫描类别</span>
+          <div class="checkrow" id="cfg-categories"></div>
+        </div>
+        <div class="field" style="margin-top:10px"><span>扫描后缀</span>
+          <div class="checkrow" id="cfg-extensions"></div>
+          <input id="cfg-ext-custom" type="text" placeholder="其他后缀，逗号分隔，例如 .onnx,.pkl">
+        </div>
+        <label class="field" style="margin-top:10px"><span>额外扫描目录（每行一个）</span>
+          <textarea id="cfg-extra-folders" rows="3"></textarea>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="btn-save-config" class="primary">保存设置</button>
+        <button id="btn-reload-config">重新读取</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="job-panel" id="job-panel" hidden>
+    <div class="job-head">
+      <span class="state" id="job-state">空闲</span>
+      <span class="detail" id="job-detail"></span>
+      <button id="job-cancel" class="danger">取消</button>
+      <button id="job-hide">收起</button>
+    </div>
+    <div class="progress"><div id="job-progress"></div></div>
+    <pre class="job-log" id="job-log"></pre>
+  </div>
+
+  <div id="modal-root"></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="static/app.mjs"></script>
+</body>
+</html>

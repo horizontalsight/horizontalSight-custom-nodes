@@ -6,11 +6,13 @@
     nodes/image_folder.py     LoadImagesFromFolder / SaveImagesWithPrompt
     nodes/sequence_save.py    SequenceImageSave
     nodes/memory.py           ClearMemory
+    text_tools/               文本处理子包：提示词清洗 PromptClean（去括号/权重）
     llama_cpp/                上游 git 仓库（整包搬入，**未改动一个字节**，git pull 仍可用）
     prestartup_script.py      启动期脚本（**必须留在包根**：ComfyUI 只扫描
                               custom_nodes/<包名>/prestartup_script.py 这一层）
 
-本文件只做一件事：把各子模块的 NODE_CLASS_MAPPINGS 汇总起来。
+本文件只做两件事：把各子模块的 NODE_CLASS_MAPPINGS 汇总起来，
+以及把 text_tools/web 注册为前端扩展目录（节点内文本预览用）。
 
 ⚠️ 节点**类型名**与拆分前完全一致，所以既有工作流（Krea2 系列的 SequenceImageSave、
    批量反推里的 llama_cpp_* / LoadImagesFromFolder / SaveImagesWithPrompt 等）
@@ -22,6 +24,10 @@ import logging
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
+
+# text_tools/web 里是节点内文本预览用的前端脚本。
+# ComfyUI 只认“包根模块”上的 WEB_DIRECTORY，所以必须写在这里而不是子包里。
+WEB_DIRECTORY = "./text_tools/web"
 
 # 记录加载结果，方便在启动日志里一眼看出哪个子模块出了问题
 _LOADED = []
@@ -60,6 +66,12 @@ def _load(label, dotted):
 # 纯本地节点（原先各自是独立包）
 for _name in ("image_folder", "sequence_save", "memory", "booru_tags"):
     _load(f"nodes.{_name}", f".nodes.{_name}")
+
+# 文本处理子包：提示词清洗（去括号/权重）
+_load("text_tools", ".text_tools")
+
+# Civitai 数据库面板 + PNG 注入
+_load("civitai_db", ".civitai_db.nodes")
 
 # 上游 git 仓库，整体搬入 llama_cpp/ 子目录
 _load("llama_cpp", ".llama_cpp")

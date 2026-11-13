@@ -1,6 +1,8 @@
 import csv
+import io
 import logging
 import re
+import zipfile
 from pathlib import Path
 
 # Tag list lives next to the pack root, see danbooru/README.md for its source.
@@ -66,41 +68,70 @@ def escape_prompt_syntax(tag):
 
 
 def pick_csvs(csv_path):
-    """Tag lists to load. Empty = every danbooru*.csv in the pack's folder, newest first.
+    """Tag lists to load.
 
-    More than one list is normal: newer dumps drop tags that older checkpoints still
-    know (silver_hair, bangs, uniform), so the union keeps both generations usable.
+    Empty = every ``danbooru*.zip`` in the pack's folder (falling back to
+    ``danbooru*.csv`` for older checkouts), newest first. A zip may contain
+    one or more CSV files; its CSV entries are loaded newest-name first.
+
+    More than one list is normal: newer dumps drop tags that older checkpoints
+    still know (silver_hair, bangs, uniform), so the union keeps both
+    generations usable.
     """
     if csv_path.strip():
         paths = [Path(part.strip()) for part in re.split(r"[;\n]", csv_path) if part.strip()]
         for path in paths:
             if not path.is_file():
                 raise FileNotFoundError(f"BooruTagNormalize: tag list not found: {path}")
+            if path.suffix.lower() not in (".csv", ".zip"):
+                raise ValueError(
+                    f"BooruTagNormalize: tag list must be .csv or .zip: {path}")
         return paths
+    zips = sorted(CSV_DIR.glob("danbooru*.zip"), reverse=True)
+    if zips:
+        return zips
     paths = sorted(CSV_DIR.glob("danbooru*.csv"), reverse=True)
     if not paths:
         raise FileNotFoundError(
-            f"BooruTagNormalize: no danbooru*.csv in {CSV_DIR}")
+            f"BooruTagNormalize: no danbooru*.zip or danbooru*.csv in {CSV_DIR}")
     return paths
+
+
+def iter_csv_rows(path):
+    """Yield rows from a CSV file, or from every CSV entry inside a zip."""
+    if path.suffix.lower() == ".zip":
+        with zipfile.ZipFile(path) as archive:
+            names = sorted(
+                (name for name in archive.namelist()
+                 if name.lower().endswith(".csv") and not name.endswith("/")),
+                reverse=True)
+            if not names:
+                raise ValueError(f"BooruTagNormalize: no CSV files in {path}")
+            for name in names:
+                with archive.open(name) as raw:
+                    with io.TextIOWrapper(raw, encoding="utf-8", newline="") as f:
+                        yield from csv.reader(f)
+    else:
+        with open(path, encoding="utf-8", newline="") as f:
+            yield from csv.reader(f)
 
 
 def load_tag_lists(paths):
     """Return (exact, aliases, loose); earlier lists win, so pass the newest one first."""
     exact, aliases, loose = {}, {}, {}
     for path in paths:
-        with open(path, encoding="utf-8") as f:
-            for row in csv.reader(f):
-                if not row or not row[0].strip():
-                    continue
-                name = row[0].strip()
-                posts = int(row[2]) if len(row) > 2 and row[2].strip().isdigit() else 0
-                key = normalize_tag(name)
-                exact.setdefault(key, (name, row[1].strip() if len(row) > 1 else "", posts))
-                loose.setdefault("".join(key.split()), name)
-                if len(row) > 3 and row[3].strip():
-                    for alias in row[3].split(","):
-                        if alias.strip():
-                            aliases.setdefault(normalize_tag(alias), name)
+        for row in iter_csv_rows(path):
+            if not row or not row[0].strip():
+                continue
+            name = row[0].strip()
+            posts = int(row[2]) if len(row) > 2 and row[2].strip().isdigit() else 0
+            key = normalize_tag(name)
+            exact.setdefault(key, (name, row[1].strip() if len(row) > 1 else "", posts))
+            loose.setdefault("".join(key.split()), name)
+            if len(row) > 3 and row[3].strip():
+                for alias in row[3].split(","):
+                    if alias.strip():
+                        aliases.setdefault(normalize_tag(alias), name)
     return exact, aliases, loose
 
 
@@ -129,7 +160,7 @@ class BooruTagNormalize:
                 "text": ("STRING", {"default": "", "multiline": True,
                                     "tooltip": "Tag string from the instruct node. Type here to test the node on its own."}),
                 "csv_path": ("STRING", {"default": "",
-                                        "tooltip": "Empty = every danbooru*.csv in the pack's danbooru folder. Separate several files with ; to pin an exact set."}),
+                                        "tooltip": "Empty = every danbooru*.zip in the pack's danbooru folder (or danbooru*.csv in older checkouts). Separate several .csv/.zip files with ; to pin an exact set."}),
                 "min_posts": ("INT", {"default": 0, "min": 0, "max": 10000000, "step": 100,
                                       "tooltip": "Drop tags with fewer Danbooru posts than this. 0 keeps all."}),
                 "drop_categories": ("STRING", {"default": "artist",
