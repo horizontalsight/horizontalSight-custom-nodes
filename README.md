@@ -7,7 +7,7 @@
 ## 功能
 
 1. 管理本地模型，构建数据库，并提供元数据一键注入图片功能。工作流中用到的模型 AIR、提示词和生成参数写回 PNG；上传到 Civitai 时就能够自动补全所用到的资源、提示词和其他元数据。
-   Manage local models, build databases, and provide one-click metadata injection for images. The AIR models, prompts and generation parameters used in the workflow are written back into PNG files. When uploading to Civitai, the referenced resources, prompts and other metadata can be auto-populated.
+   Manage local models, build a local model database, and provide one-click metadata injection for images. The model AIRs, prompts and generation parameters used in the workflow are written back into PNG files. When uploading to Civitai, the referenced resources, prompts and other metadata can be auto-populated.
    ![db1](README/db1.png)
    ![db2](README/db2.png)
 
@@ -15,12 +15,12 @@
    Includes a custom Llama node to call local LLMs. You can use any model you prefer for image analysis, prompt generation and other tasks.
 
 3. 提供自定义提示词清洗节点，把带有括号对和权重语法的danbooru提示词，转换为纯净danbooru标签。
-   Comes with a custom prompt cleaner node, which converts Danbooru prompts with bracket weighting syntax into clean Danbooru tags.
+   Comes with a custom prompt cleaner node, which converts Danbooru prompts with parenthesized weight syntax into clean Danbooru tags.
 
    <img src="README/danbooru_translate.png" title="" alt="danbooru_translate" style="zoom:50%;">
 
 4. 提供顺序保存图片节点，让同一个输出目录下，所有文件名前缀共用一条连续编号。更换 `filename_prefix` 也不会打乱排序。
-   Provides a sequential image save node. All files under the same output directory share a continuous sequence number for the filename prefix. Changing `filename_prefix` will not break the ordering.
+   Provides a sequential image save node. All filename prefixes in the same output directory share one continuous sequence number. Changing `filename_prefix` will not break the ordering.
    ![SequenceImageSave](README/SequenceImageSave.png)
 
 5. 附带了一些工作流，包括A1111/SD webui、Krea2、MOSS、Qwen 2.1、Qwen3-TTS、MiniMax H3、Zimage 等。
@@ -177,7 +177,8 @@ ComfyUI 根目录默认从插件安装位置推断（`civitai_db` → 向上找�
 horizontalSight-custom-nodes/
 ├── __init__.py              门面：汇总各子模块的 NODE_CLASS_MAPPINGS（含冲突保护）
 ├── prestartup_script.py     启动期脚本：关掉 ComfyUI 0.30 的 pinned-memory 权重驻留
-├── LICENSE                  MIT（llama_cpp/ 除外）
+├── LICENSE                  MIT
+├── NOTICE                   许可证范围说明（llama_cpp/ 例外）
 ├── nodes/                   本地节点（每个文件独立可读）
 │   ├── image_folder.py      LoadImagesFromFolder / SaveImagesWithPrompt
 │   ├── sequence_save.py     SequenceImageSave
@@ -254,7 +255,7 @@ horizontalSight-custom-nodes/
 
 ## 许可证
 
-- 本仓库根目录采用 MIT，详见 `LICENSE`；
+- 本仓库根目录采用 MIT，详见 `LICENSE`；根目录 `NOTICE` 说明了适用范围；
 - `llama_cpp/` 是上游项目的 fork，上游没有附带许可证，因此**不在 MIT 范围内**，详见 `llama_cpp/NOTICE`；仅建议个人使用，公开再分发前请先取得版权方许可；
 - `danbooru/` 中的词表数据来自 Danbooru 标签归档，来源与校验方式见 `danbooru/README.md`。
 

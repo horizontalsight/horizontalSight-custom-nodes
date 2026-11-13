@@ -1,0 +1,11 @@
+NOTICE
+======
+
+This repository is released under the MIT License; see `LICENSE`.
+
+Exception: the `llama_cpp/` directory is a fork / snapshot of an upstream
+project that ships no license, and it is NOT covered by the MIT license.
+See `llama_cpp/NOTICE` for its upstream attribution and status.
+
+The Danbooru tag data in `danbooru/` comes from third-party archives; see
+`danbooru/README.md` for its source and checksums.
